@@ -1,0 +1,285 @@
+# Family Office Configuration
+# Conservative wealth management with alternative investments
+
+firm:
+  name: "Heritage Family Office"
+  id: "family_office"
+  type: "family_office"
+  aum: 2000000000  # $2B AUM
+  founded: "1995"
+  
+  # Client Information
+  client_profile:
+    family_name: "Heritage Family"
+    generations: 3
+    wealth_source: "technology_business_sale"
+    investment_horizon: "multi_generational"
+    risk_tolerance: "moderate_conservative"
+    
+  # Investment Philosophy
+  investment_philosophy:
+    primary_objective: "wealth_preservation"
+    secondary_objective: "capital_appreciation"
+    esg_focus: true
+    impact_investing: true
+    
+    core_beliefs:
+      - "Long-term value creation over short-term gains"
+      - "Diversification across asset classes and geographies"
+      - "Active risk management with downside protection"
+      - "Sustainable and responsible investing"
+      
+  # Capital Structure & Allocation
+  capital:
+    total_aum: 2000000000           # $2B total assets
+    liquid_investments: 1200000000  # $1.2B liquid
+    illiquid_investments: 600000000 # $600M illiquid
+    cash_reserves: 200000000        # $200M cash
+    
+    strategic_allocation:
+      public_equities: 0.35         # 35%
+      fixed_income: 0.25            # 25%
+      alternatives: 0.25            # 25%
+      real_estate: 0.10             # 10%
+      cash: 0.05                    # 5%
+      
+    geographic_allocation:
+      us_domestic: 0.60             # 60%
+      developed_international: 0.25  # 25%
+      emerging_markets: 0.10        # 10%
+      frontier_markets: 0.05        # 5%
+      
+  # Trading & Investment Approach
+  trading:
+    investment_style: "buy_and_hold_plus"
+    rebalancing_frequency: "quarterly"
+    
+    enabled_strategies:
+      - "strategic_asset_allocation"
+      - "tactical_asset_allocation"
+      - "momentum_overlay"
+      - "volatility_overlay"
+      - "currency_hedging"
+      - "tail_risk_hedging"
+      
+    execution_preferences:
+      cost_minimization: true
+      market_impact_minimization: true
+      patient_execution: true
+      
+  # Alternative Investments
+  alternatives:
+    private_equity:
+      allocation: 0.10              # 10% of total portfolio
+      vintage_year_diversification: true
+      geographic_focus: ["US", "Europe", "Asia"]
+      sector_focus: ["Technology", "Healthcare", "Consumer"]
+      
+      target_funds:
+        - "KKR North America Fund XIII"
+        - "Apollo Investment Fund IX"
+        - "Carlyle Partners VII"
+        - "Sequoia Capital Fund"
+        
+    hedge_funds:
+      allocation: 0.08              # 8% of total portfolio
+      strategy_diversification: true
+      
+      target_strategies:
+        - name: "long_short_equity"
+          allocation: 0.03
+          target_managers: ["Citadel", "Two Sigma"]
+        - name: "global_macro"
+          allocation: 0.02
+          target_managers: ["Bridgewater", "Renaissance"]
+        - name: "event_driven"
+          allocation: 0.02
+          target_managers: ["Elliott Management", "Third Point"]
+        - name: "relative_value"
+          allocation: 0.01
+          target_managers: ["D.E. Shaw", "AQR"]
+          
+    real_estate:
+      allocation: 0.10              # 10% of total portfolio
+      
+      strategies:
+        - name: "core_real_estate"
+          allocation: 0.06
+          focus: ["Office", "Retail", "Industrial"]
+        - name: "opportunistic_real_estate"
+          allocation: 0.04
+          focus: ["Development", "Distressed", "International"]
+          
+    commodities:
+      allocation: 0.02              # 2% of total portfolio
+      instruments: ["Gold", "Oil", "Agricultural futures"]
+      
+  # Risk Management Framework
+  risk_management:
+    # Overall Portfolio Risk
+    portfolio_risk:
+      target_volatility: 0.08       # 8% annual volatility
+      max_volatility: 0.12          # 12% maximum volatility
+      var_limit_95: 0.02            # 2% daily VaR at 95% confidence
+      
+    # Downside Protection
+    downside_protection:
+      max_drawdown_target: 0.08     # 8% maximum drawdown
+      tail_hedge_allocation: 0.02   # 2% for tail hedging
+      
+      stop_loss_procedures:
+        portfolio_loss_5pct: "review_with_investment_committee"
+        portfolio_loss_10pct: "implement_defensive_measures"
+        portfolio_loss_15pct: "emergency_risk_reduction"
+        
+    # Liquidity Management
+    liquidity:
+      liquidity_bucket_1: 0.30      # 30% - daily liquidity
+      liquidity_bucket_2: 0.40      # 40% - weekly liquidity
+      liquidity_bucket_3: 0.25      # 25% - monthly liquidity
+      liquidity_bucket_4: 0.05      # 5% - annual+ liquidity
+      
+    # Currency Risk
+    currency_hedging:
+      base_currency: "USD"
+      hedge_ratio_developed: 0.50   # 50% hedge ratio for developed markets
+      hedge_ratio_emerging: 0.75    # 75% hedge ratio for emerging markets
+      
+  # ESG & Impact Investing
+  esg_framework:
+    integration_approach: "fully_integrated"
+    
+    exclusions:
+      - "tobacco"
+      - "weapons"
+      - "adult_entertainment" 
+      - "private_prisons"
+      - "thermal_coal"
+      
+    positive_screening:
+      - "renewable_energy"
+      - "sustainable_agriculture"
+      - "clean_technology"
+      - "healthcare_innovation"
+      - "education_technology"
+      
+    impact_allocation: 0.15         # 15% dedicated to impact investing
+    
+    measurement:
+      carbon_footprint_tracking: true
+      esg_scoring: true
+      impact_metrics: true
+      
+  # Performance Objectives
+  performance:
+    return_targets:
+      long_term_real_return: 0.05   # 5% real return target
+      volatility_target: 0.08       # 8% volatility target
+      
+    benchmarks:
+      primary: "Custom Policy Benchmark"
+      comparative: ["MSCI World", "Bloomberg Agg", "CPI + 5%"]
+      
+    reporting_frequency:
+      family_reports: "monthly"
+      performance_attribution: "quarterly"
+      comprehensive_review: "annually"
+      
+  # Governance Structure
+  governance:
+    investment_committee:
+      members: 5
+      meeting_frequency: "quarterly"
+      decision_threshold: "majority_vote"
+      
+    family_board:
+      members: 7                    # Family members + independent directors
+      meeting_frequency: "semi_annually"
+      
+    next_generation:
+      education_program: true
+      mentorship: true
+      gradual_involvement: true
+      
+  # Service Providers
+  service_providers:
+    custodian: "Northern Trust"
+    prime_brokerage: ["Goldman Sachs", "Morgan Stanley"]
+    
+    asset_managers:
+      equities: ["BlackRock", "Vanguard", "State Street"]
+      fixed_income: ["PIMCO", "DoubleLine", "Metropolitan West"]
+      alternatives: ["Apollo", "KKR", "Blackstone"]
+      
+    advisors:
+      investment_consultant: "Cambridge Associates"
+      tax_advisor: "Deloitte"
+      legal_counsel: "Sidley Austin"
+      
+  # Technology & Operations
+  technology:
+    portfolio_management_system: "Charles River IMS"
+    reporting_platform: "Addepar"
+    document_management: "NetDocuments"
+    
+    data_providers:
+      market_data: ["Bloomberg", "FactSet"]
+      alternative_data: ["Preqin", "PitchBook"]
+      esg_data: ["MSCI ESG", "Sustainalytics"]
+      
+  # Operational Framework
+  operations:
+    trade_settlement: "T+2"
+    reconciliation_frequency: "daily"
+    performance_calculation: "daily"
+    
+    reporting:
+      family_dashboard: "real_time"
+      monthly_reports: "comprehensive"
+      quarterly_reviews: "detailed_attribution"
+      annual_reports: "full_audit"
+      
+  # Regulatory & Compliance
+  compliance:
+    registration_status: "sec_exempt"  # Family office exemption
+    
+    policies:
+      conflicts_of_interest: true
+      insider_trading: true
+      anti_money_laundering: true
+      cybersecurity: true
+      
+    record_keeping:
+      investment_records: "7_years"
+      correspondence: "5_years"
+      compliance_records: "indefinite"
+      
+  # Succession Planning
+  succession:
+    next_generation_readiness:
+      generation_2: "fully_ready"
+      generation_3: "in_training"
+      
+    wealth_transfer_strategies:
+      grantor_trusts: true
+      charitable_remainder_trusts: true
+      family_limited_partnerships: true
+      
+    education_initiatives:
+      investment_education: true
+      board_participation: true
+      philanthropic_involvement: true
+      
+  # Philanthropic Activities
+  philanthropy:
+    foundation_assets: 100000000    # $100M in foundation
+    annual_giving: 20000000         # $20M annual giving
+    
+    focus_areas:
+      - "education"
+      - "healthcare"
+      - "environmental_conservation"
+      - "arts_and_culture"
+      
+    giving_strategy: "strategic_philanthropy"
+    impact_measurement: true

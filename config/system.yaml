@@ -1,0 +1,427 @@
+# QUANTUM-FORGE System Configuration
+# Master configuration file for the HFT trading system
+
+system:
+  name: "QUANTUM-FORGE-CRYPTO"
+  version: "1.0.0"
+  environment: "production"  # development, staging, production
+  instance_id: "qf-crypto-prod-001"
+  
+  # Core System Settings
+  core:
+    timezone: "UTC"
+    trading_mode: "crypto"  # Cryptocurrency 24/7 trading
+    trading_session_start: "00:00:00"  # 24/7 crypto markets
+    trading_session_end: "23:59:59"
+    weekend_trading: true  # Crypto trades on weekends
+    holiday_trading: true  # Crypto trades on holidays
+    exchange: "binance"
+    
+    # Supported cryptocurrency pairs
+    trading_pairs:
+      - "BTCUSDT"
+      - "ETHUSDT"
+      - "BNBUSDT"
+      - "SOLUSDT"
+      - "ADAUSDT"
+      - "DOGEUSDT"
+      - "XRPUSDT"
+    
+  # Database Configuration
+  database:
+    primary:
+      type: "timescaledb"
+      host: "${DB_HOST:-localhost}"
+      port: "${DB_PORT:-5432}"
+      name: "${DB_NAME:-quantum_forge}"
+      user: "${DB_USER:-quantum_user}"
+      password: "${DB_PASSWORD}"
+      ssl_mode: "require"
+      pool_size: 20
+      max_overflow: 50
+      pool_timeout: 30
+      pool_recycle: 3600
+      query_timeout: 30
+      
+    read_replicas:
+      - host: "${DB_READ_HOST_1}"
+        port: 5432
+        weight: 0.5
+      - host: "${DB_READ_HOST_2}"
+        port: 5432
+        weight: 0.5
+        
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"  # Daily at 2 AM
+      retention_days: 30
+      compress: true
+      
+  # Cache Configuration
+  cache:
+    redis:
+      primary:
+        host: "${REDIS_HOST:-localhost}"
+        port: "${REDIS_PORT:-6379}"
+        db: 0
+        password: "${REDIS_PASSWORD}"
+        ssl: true
+        pool_size: 20
+        socket_timeout: 5
+        socket_connect_timeout: 5
+        
+      cluster:
+        enabled: false
+        nodes:
+          - host: "redis-1"
+            port: 6379
+          - host: "redis-2"
+            port: 6379
+          - host: "redis-3"
+            port: 6379
+            
+    memory:
+      max_size: "8GB"
+      eviction_policy: "allkeys-lru"
+      
+  # Message Queue Configuration
+  messaging:
+    type: "redis"  # redis, rabbitmq, kafka
+    redis:
+      stream_max_len: 1000000
+      consumer_group: "quantum-forge"
+      block_time: 1000  # milliseconds
+      
+  # Logging Configuration
+  logging:
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format: "json"
+    structured: true
+    correlation_id: true
+    
+    handlers:
+      console:
+        enabled: true
+        level: "INFO"
+        
+      file:
+        enabled: true
+        level: "DEBUG"
+        path: "logs/quantum_forge.log"
+        max_size: "100MB"
+        backup_count: 10
+        rotation: "daily"
+        
+      elasticsearch:
+        enabled: false
+        host: "${ES_HOST}"
+        index: "quantum-forge-logs"
+        
+    loggers:
+      trading: "INFO"
+      risk: "WARNING"
+      market_data: "INFO"
+      execution: "DEBUG"
+      analytics: "INFO"
+      
+  # Performance Configuration
+  performance:
+    # Threading
+    max_threads: 16
+    io_threads: 8
+    cpu_threads: 8
+    
+    # Memory
+    max_memory: "16GB"
+    gc_threshold: 0.8
+    
+    # Processing
+    batch_size: 10000
+    buffer_size: 100000
+    queue_timeout: 1000  # milliseconds
+    
+    # Caching
+    cache_size: "4GB"
+    cache_ttl: 3600  # seconds
+    
+    # Network
+    connection_timeout: 5
+    read_timeout: 10
+    max_connections: 1000
+    keep_alive: true
+    
+  # Security Configuration
+  security:
+    encryption:
+      algorithm: "AES-256-GCM"
+      key_rotation_days: 90
+      
+    authentication:
+      method: "JWT"
+      secret_key: "${JWT_SECRET}"
+      expiry_hours: 24
+      refresh_enabled: true
+      
+    authorization:
+      rbac_enabled: true
+      admin_users: ["admin@quantum-forge.ai"]
+      
+    api:
+      rate_limiting:
+        enabled: true
+        requests_per_minute: 1000
+        burst_size: 100
+        
+      cors:
+        enabled: true
+        origins: ["https://dashboard.quantum-forge.ai"]
+        
+    audit:
+      enabled: true
+      log_all_trades: true
+      log_config_changes: true
+      retention_days: 365
+      
+  # Risk Management Global Settings
+  risk:
+    global_limits:
+      max_total_exposure: 100000000  # $100M
+      max_sector_concentration: 0.20  # 20%
+      max_single_position: 0.05  # 5% of portfolio
+      max_correlation: 0.8
+      
+    var_settings:
+      confidence_level: 0.99
+      holding_period: 1  # days
+      lookback_period: 252  # trading days
+      monte_carlo_simulations: 10000
+      
+    drawdown_limits:
+      max_daily_drawdown: 0.02  # 2%
+      max_weekly_drawdown: 0.05  # 5%
+      max_monthly_drawdown: 0.10  # 10%
+      
+    circuit_breakers:
+      enabled: true
+      market_volatility_threshold: 0.05  # 5% market move
+      portfolio_volatility_threshold: 0.03  # 3% portfolio move
+      correlation_spike_threshold: 0.9
+      
+  # Data Sources Configuration
+  data_sources:
+    binance:
+      enabled: true
+      api_key: "${BINANCE_API_KEY}"
+      secret_key: "${BINANCE_SECRET_KEY}"
+      base_url: "https://api.binance.com"
+      rate_limit: 1200  # requests per minute
+      retry_attempts: 3
+      timeout: 5
+      
+    alpha_vantage:
+      enabled: true
+      api_key: "${ALPHA_VANTAGE_API_KEY}"
+      base_url: "https://www.alphavantage.co"
+      rate_limit: 5  # requests per minute (free tier)
+      premium: false
+      
+    polygon:
+      enabled: false
+      api_key: "${POLYGON_API_KEY}"
+      base_url: "https://api.polygon.io"
+      rate_limit: 5  # requests per minute
+      
+    iex_cloud:
+      enabled: false
+      api_key: "${IEX_API_KEY}"
+      base_url: "https://cloud.iexapis.com"
+      
+    custom_feeds:
+      enabled: false
+      feeds: []
+      
+  # Execution Configuration
+  execution:
+    default_algorithm: "TWAP"
+    
+    latency:
+      target_latency_us: 100  # microseconds
+      max_latency_us: 1000
+      latency_monitoring: true
+      
+    order_management:
+      max_order_size: 1000000  # $1M
+      min_order_size: 1000     # $1K
+      order_timeout: 30        # seconds
+      partial_fills: true
+      
+    slippage:
+      max_slippage_bps: 10  # 10 basis points
+      slippage_monitoring: true
+      adaptive_sizing: true
+      
+  # Analytics Configuration
+  analytics:
+    real_time:
+      enabled: true
+      update_frequency: 1  # seconds
+      metrics_retention: 24  # hours
+      
+    batch:
+      enabled: true
+      schedule: "0 */4 * * *"  # Every 4 hours
+      
+    ml_models:
+      enabled: true
+      model_refresh_hours: 24
+      feature_store_enabled: true
+      
+    backtesting:
+      enabled: true
+      max_parallel_tests: 4
+      data_lookback_years: 5
+      
+  # Monitoring & Alerting
+  monitoring:
+    prometheus:
+      enabled: true
+      port: 9090
+      metrics_path: "/metrics"
+      scrape_interval: "15s"
+      
+    grafana:
+      enabled: true
+      port: 3000
+      admin_user: "${GRAFANA_USER:-admin}"
+      admin_password: "${GRAFANA_PASSWORD}"
+      
+    alerting:
+      enabled: true
+      channels:
+        email:
+          enabled: true
+          smtp_host: "${SMTP_HOST}"
+          smtp_port: 587
+          username: "${SMTP_USER}"
+          password: "${SMTP_PASSWORD}"
+          from_address: "alerts@quantum-forge.ai"
+          
+        slack:
+          enabled: true
+          webhook_url: "${SLACK_WEBHOOK_URL}"
+          channel: "#trading-alerts"
+          
+        pagerduty:
+          enabled: false
+          service_key: "${PAGERDUTY_SERVICE_KEY}"
+          
+      thresholds:
+        high_latency_ms: 10
+        error_rate_percent: 1.0
+        memory_usage_percent: 85
+        cpu_usage_percent: 80
+        disk_usage_percent: 90
+        
+  # Feature Flags
+  features:
+    dark_pools: false
+    crypto_trading: true
+    options_trading: false
+    futures_trading: false
+    forex_trading: false
+    
+    machine_learning: true
+    reinforcement_learning: false
+    
+    real_time_risk: true
+    portfolio_optimization: true
+    
+    backtesting: true
+    paper_trading: true
+    
+  # API Configuration
+  api:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+    
+    docs:
+      enabled: true
+      title: "QUANTUM-FORGE API"
+      version: "1.0.0"
+      
+    cors:
+      enabled: true
+      origins: ["*"]
+      methods: ["GET", "POST", "PUT", "DELETE"]
+      headers: ["*"]
+      
+    rate_limiting:
+      enabled: true
+      default_limit: "1000/minute"
+      
+    authentication:
+      required: true
+      jwt_secret: "${JWT_SECRET}"
+      
+  # Deployment Configuration
+  deployment:
+    mode: "production"  # development, staging, production
+    
+    scaling:
+      auto_scaling: true
+      min_replicas: 3
+      max_replicas: 10
+      target_cpu_percent: 70
+      target_memory_percent: 80
+      
+    health_checks:
+      enabled: true
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+      
+    graceful_shutdown:
+      enabled: true
+      timeout: 30  # seconds
+      
+  # Development Settings (only active in development mode)
+  development:
+    debug: true
+    auto_reload: true
+    profiling: true
+    test_data: true
+    mock_market_data: false
+    
+# Environment-specific overrides
+environments:
+  development:
+    system:
+      environment: "development"
+    logging:
+      level: "DEBUG"
+    database:
+      primary:
+        pool_size: 5
+    performance:
+      max_threads: 4
+    risk:
+      global_limits:
+        max_total_exposure: 1000000  # $1M for dev
+        
+  staging:
+    system:
+      environment: "staging"
+    risk:
+      global_limits:
+        max_total_exposure: 10000000  # $10M for staging
+        
+  production:
+    system:
+      environment: "production"
+    logging:
+      level: "INFO"
+    security:
+      authentication:
+        expiry_hours: 8  # Shorter sessions in prod

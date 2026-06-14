@@ -1,0 +1,103 @@
+[tool.poetry]
+name = "quantum-forge"
+version = "1.0.0"
+description = "High-Frequency Trading System with Advanced ML Intelligence"
+authors = ["Quantum Forge Team <team@quantumforge.ai>"]
+readme = "README.md"
+packages = [{include = "quantum_forge"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^1.24.0"
+pandas = "^2.0.0"
+scipy = "^1.10.0"
+scikit-learn = "^1.3.0"
+torch = "^2.0.0"
+tensorflow = "^2.13.0"
+jax = "^0.4.0"
+optax = "^0.1.0"
+gymnasium = "^0.28.0"
+stable-baselines3 = "^2.0.0"
+ray = {extras = ["tune"], version = "^2.5.0"}
+gpytorch = "^1.11.0"
+botorch = "^0.9.0"
+pymc = "^5.6.0"
+numpyro = "^0.12.0"
+plotly = "^5.15.0"
+dash = "^2.11.0"
+fastapi = "^0.100.0"
+uvicorn = "^0.23.0"
+websockets = "^11.0.0"
+aiohttp = "^3.8.0"
+asyncio-mqtt = "^0.13.0"
+redis = "^4.6.0"
+psycopg2-binary = "^2.9.0"
+sqlalchemy = "^2.0.0"
+alembic = "^1.11.0"
+pydantic = "^2.0.0"
+typer = "^0.9.0"
+rich = "^13.4.0"
+loguru = "^0.7.0"
+prometheus-client = "^0.17.0"
+docker = "^6.1.0"
+kubernetes = "^27.2.0"
+celery = "^5.3.0"
+flower = "^2.0.0"
+ccxt = "^4.0.0"
+ta-lib = "^0.4.0"
+zipline-reloaded = "^3.0.0"
+backtrader = "^1.9.0"
+quantlib = "^1.31.0"
+arch = "^6.2.0"
+statsmodels = "^0.14.0"
+networkx = "^3.1.0"
+graph-tool = "^2.45.0"
+igraph = "^0.10.0"
+pyarrow = "^12.0.0"
+polars = "^0.18.0"
+duckdb = "^0.8.0"
+vaex = "^4.17.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+black = "^23.7.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
+mypy = "^1.4.0"
+pre-commit = "^3.3.0"
+jupyter = "^1.0.0"
+ipykernel = "^6.24.0"
+nbformat = "^5.9.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.1.0"
+sphinx-rtd-theme = "^1.3.0"
+myst-parser = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--cov=quantum_forge --cov-report=html --cov-report=term-missing"

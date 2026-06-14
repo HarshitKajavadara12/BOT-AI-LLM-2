@@ -1,0 +1,276 @@
+# Momentum Strategy Configuration
+# Trend-following strategy across multiple timeframes and asset classes
+
+strategy:
+  name: "Cross-Asset Momentum"
+  id: "momentum_strategy"
+  type: "systematic"
+  category: "momentum"
+  
+  # Strategy Description
+  description: "Multi-timeframe momentum strategy that captures trends across equities, FX, commodities, and bonds using advanced signal processing and regime-aware position sizing"
+  
+  # Strategy Parameters
+  parameters:
+    # Signal Generation
+    signals:
+      price_momentum:
+        lookback_periods: [20, 60, 120, 252]    # 1M, 3M, 6M, 1Y
+        weights: [0.4, 0.3, 0.2, 0.1]           # Emphasis on shorter-term
+        min_observations: 20
+        
+      volume_momentum:
+        enabled: true
+        lookback_period: 20
+        volume_price_correlation: 0.6
+        
+      cross_sectional_momentum:
+        enabled: true
+        ranking_universe: 500                   # Top 500 liquid stocks
+        percentile_threshold: 0.8               # Top/bottom 20%
+        
+      # Advanced Signals
+      earnings_momentum:
+        enabled: true
+        revision_lookback: 60                   # 60 days
+        surprise_weight: 0.3
+        
+      options_momentum:
+        enabled: true
+        put_call_ratio: true
+        implied_vol_skew: true
+        
+    # Entry Conditions
+    entry:
+      momentum_threshold: 1.5                   # 1.5 standard deviations
+      confirmation_period: 3                    # 3 days confirmation
+      volume_confirmation: true
+      
+      regime_filters:
+        volatility_regime: true
+        correlation_regime: true
+        liquidity_regime: true
+        
+      technical_filters:
+        rsi_overbought: 80
+        rsi_oversold: 20
+        bollinger_position: true
+        
+    # Exit Conditions
+    exit:
+      momentum_decay_threshold: 0.5             # Exit when momentum drops below 0.5 std
+      time_stop: 60                            # Maximum 60 days holding
+      
+      profit_targets:
+        take_profit_1: 0.05                    # 5% first target
+        take_profit_2: 0.10                    # 10% second target
+        trailing_stop: 0.03                    # 3% trailing stop
+        
+      stop_losses:
+        initial_stop: 0.04                     # 4% initial stop
+        breakeven_stop: true
+        volatility_adjusted_stop: true
+        
+  # Position Sizing
+  position_sizing:
+    method: "volatility_adjusted"
+    
+    base_allocation: 0.02                      # 2% base position size
+    max_allocation: 0.05                       # 5% maximum position size
+    
+    volatility_targeting:
+      target_volatility: 0.15                 # 15% annual volatility
+      lookback_period: 60                     # 60 days for vol calculation
+      min_volatility: 0.05                    # Minimum 5% volatility assumption
+      max_volatility: 0.50                    # Maximum 50% volatility cap
+      
+    kelly_fraction: 0.25                       # Use 25% of Kelly optimal
+    
+    correlation_adjustment:
+      enabled: true
+      max_correlation: 0.6                    # Reduce size if correlation > 60%
+      correlation_lookback: 60
+      
+  # Risk Management
+  risk_management:
+    # Portfolio Level
+    portfolio_limits:
+      max_gross_exposure: 2.0                 # 200% gross exposure
+      max_net_exposure: 1.0                   # 100% net exposure
+      max_sector_concentration: 0.3           # 30% per sector
+      max_single_position: 0.05               # 5% per position
+      
+    # Drawdown Controls
+    drawdown_management:
+      daily_var_limit: 0.03                   # 3% daily VaR
+      max_drawdown_limit: 0.08                # 8% maximum drawdown
+      
+      risk_scaling:
+        scale_down_threshold: 0.05            # Scale down at 5% drawdown
+        scale_up_threshold: 0.02              # Scale up when drawdown < 2%
+        min_scale_factor: 0.5                 # Minimum 50% scale
+        
+    # Dynamic Hedging
+    hedging:
+      tail_hedge_allocation: 0.02             # 2% for tail hedging
+      correlation_hedge: true
+      sector_neutral_option: false
+      
+  # Universe Definition
+  universe:
+    # Equity Universe
+    equities:
+      exchanges: ["NYSE", "NASDAQ", "LSE", "TSE"]
+      market_cap_min: 1000000000              # $1B minimum market cap
+      average_volume_min: 1000000             # $1M daily volume
+      
+      exclusions:
+        - "penny_stocks"
+        - "recent_ipos"                       # IPOs < 6 months
+        - "financial_distress"                # High bankruptcy risk
+        
+      sectors:
+        technology: 0.25                      # Maximum 25% in any sector
+        healthcare: 0.20
+        consumer: 0.20
+        industrials: 0.15
+        energy: 0.10
+        utilities: 0.05
+        real_estate: 0.05
+        
+    # FX Universe
+    currencies:
+      major_pairs: ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF"]
+      minor_pairs: ["EURGBP", "EURJPY", "GBPJPY"]
+      emerging_pairs: ["USDMXN", "USDBRL", "USDTRY"]
+      
+    # Commodities
+    commodities:
+      energy: ["WTI", "Brent", "Natural Gas"]
+      metals: ["Gold", "Silver", "Copper", "Platinum"]
+      agriculture: ["Wheat", "Corn", "Soybeans", "Sugar"]
+      
+    # Fixed Income
+    bonds:
+      government: ["US 10Y", "German 10Y", "Japanese 10Y"]
+      corporate: ["Investment Grade", "High Yield"]
+      
+  # Execution
+  execution:
+    order_type: "adaptive"
+    
+    timing:
+      entry_spread_tolerance: 0.002           # 20 bps spread tolerance
+      exit_urgency: "normal"
+      
+    algorithms:
+      small_orders: "TWAP"                    # < $1M
+      medium_orders: "Implementation Shortfall" # $1M - $10M
+      large_orders: "Participation Rate"      # > $10M
+      
+    slippage_budget: 0.001                    # 10 bps slippage budget
+    
+  # Performance Targets
+  performance:
+    target_annual_return: 0.12                # 12% annual return
+    target_sharpe_ratio: 0.8                  # 0.8 Sharpe ratio
+    target_max_drawdown: 0.08                 # 8% max drawdown
+    target_win_rate: 0.55                     # 55% win rate
+    
+    benchmark: "MSCI World"
+    tracking_error_budget: 0.15               # 15% tracking error
+    
+  # Research & Development
+  research:
+    # Signal Research
+    alternative_signals:
+      satellite_data: false                   # Not implemented yet
+      social_sentiment: true
+      earnings_call_nlp: true
+      patent_filings: false
+      
+    # ML Enhancement
+    machine_learning:
+      feature_engineering: true
+      ensemble_methods: true
+      reinforcement_learning: false           # Future enhancement
+      
+    # Regime Detection
+    regime_models:
+      hmm_regimes: true
+      volatility_regimes: true
+      correlation_regimes: true
+      
+  # Backtesting Configuration
+  backtesting:
+    start_date: "2010-01-01"
+    end_date: "2023-12-31"
+    
+    transaction_costs:
+      equities: 0.0005                        # 5 bps
+      fx: 0.0002                             # 2 bps
+      commodities: 0.001                     # 10 bps
+      bonds: 0.0003                          # 3 bps
+      
+    market_impact:
+      small_trade: 0.0002                    # 2 bps
+      medium_trade: 0.0005                   # 5 bps
+      large_trade: 0.001                     # 10 bps
+      
+    rebalancing_frequency: "daily"
+    
+  # Monitoring & Alerts
+  monitoring:
+    # Performance Monitoring
+    performance_alerts:
+      daily_loss_threshold: 0.02             # 2% daily loss
+      drawdown_threshold: 0.05               # 5% drawdown
+      sharpe_ratio_threshold: 0.5            # Below 0.5 Sharpe
+      
+    # Risk Monitoring
+    risk_alerts:
+      position_limit_breach: true
+      correlation_spike: 0.8                 # Above 80% correlation
+      volatility_spike: 2.0                  # 2x normal volatility
+      
+    # Signal Monitoring
+    signal_alerts:
+      signal_decay: true                     # When signals stop working
+      regime_change: true                    # Market regime changes
+      universe_changes: true                 # When stocks enter/exit universe
+      
+  # Strategy Variants
+  variants:
+    conservative:
+      position_sizing_multiplier: 0.5
+      stop_loss_tighter: 0.03
+      profit_target_lower: 0.04
+      
+    aggressive:
+      position_sizing_multiplier: 1.5
+      stop_loss_wider: 0.06
+      profit_target_higher: 0.12
+      
+    sector_neutral:
+      sector_neutral: true
+      long_short_equal: true
+      
+  # Implementation Notes
+  implementation:
+    data_requirements:
+      - "Daily OHLCV data for all universe constituents"
+      - "Intraday data for execution timing"
+      - "Fundamental data for earnings momentum"
+      - "Options data for sentiment signals"
+      
+    infrastructure_requirements:
+      - "Real-time market data feeds"
+      - "Order management system"
+      - "Risk management system"
+      - "Portfolio management system"
+      
+    team_requirements:
+      - "1 Portfolio Manager"
+      - "1 Quantitative Researcher"
+      - "1 Risk Manager"
+      - "0.5 Trader"

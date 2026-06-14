@@ -1,0 +1,319 @@
+# Mean Reversion Strategy Configuration
+# Statistical arbitrage and pairs trading with advanced modeling
+
+strategy:
+  name: "Statistical Arbitrage"
+  id: "mean_reversion_strategy"
+  type: "systematic"
+  category: "mean_reversion"
+  
+  # Strategy Description
+  description: "Multi-asset mean reversion strategy using cointegration, statistical arbitrage, and pairs trading with regime-aware modeling and dynamic hedging"
+  
+  # Core Strategy Parameters
+  parameters:
+    # Mean Reversion Signals
+    mean_reversion:
+      # Z-Score Based Signals
+      zscore_signals:
+        lookback_periods: [20, 60, 120]       # Short, medium, long-term
+        entry_threshold: 2.0                  # 2 standard deviations
+        exit_threshold: 0.5                   # Return to 0.5 std from mean
+        stop_loss_threshold: 3.0              # 3 standard deviations (momentum)
+        
+      # Bollinger Band Signals  
+      bollinger_bands:
+        period: 20
+        std_multiplier: 2.0
+        squeeze_detection: true               # Low volatility periods
+        
+      # RSI Signals
+      rsi:
+        period: 14
+        overbought: 70
+        oversold: 30
+        divergence_detection: true
+        
+    # Pairs Trading
+    pairs_trading:
+      # Pair Selection
+      pair_selection:
+        correlation_threshold: 0.7            # Minimum 70% correlation
+        cointegration_pvalue: 0.05           # 5% significance level
+        sector_matching: true                 # Prefer same-sector pairs
+        market_cap_ratio_max: 5.0            # Max 5:1 market cap ratio
+        
+      # Spread Modeling
+      spread_modeling:
+        half_life_min: 5                     # Minimum 5 days mean reversion
+        half_life_max: 60                    # Maximum 60 days
+        ou_process: true                      # Ornstein-Uhlenbeck modeling
+        kalman_filter: true                   # Dynamic parameter estimation
+        
+      # Trading Rules
+      trading_rules:
+        entry_zscore: 2.0                    # Enter when spread > 2 std
+        exit_zscore: 0.2                     # Exit when spread < 0.2 std
+        stop_loss_zscore: 3.5                # Stop loss at 3.5 std
+        time_stop_days: 30                   # Maximum 30 days holding
+        
+    # Statistical Arbitrage
+    statistical_arbitrage:
+      # Factor Models
+      factor_models:
+        market_factor: true                   # Market beta neutrality
+        size_factor: true                     # Size factor exposure
+        value_factor: true                    # Value factor exposure
+        momentum_factor: true                 # Momentum factor exposure
+        
+      # Residual Trading
+      residual_trading:
+        residual_zscore_threshold: 1.5       # Trade residuals > 1.5 std
+        residual_half_life_max: 20           # Max 20 days residual mean reversion
+        factor_neutrality: true              # Maintain factor neutrality
+        
+    # Intraday Mean Reversion
+    intraday_mean_reversion:
+      enabled: true
+      
+      microstructure_signals:
+        order_imbalance: true                 # Order book imbalance
+        price_impact: true                    # Temporary price impact
+        volume_profile: true                  # Volume-weighted average price
+        
+      time_horizons:
+        ultra_short: "5_minutes"             # 5-minute mean reversion
+        short: "30_minutes"                  # 30-minute mean reversion
+        medium: "2_hours"                    # 2-hour mean reversion
+        
+  # Universe Definition
+  universe:
+    # Primary Universe (for pairs)
+    primary_universe:
+      exchanges: ["NYSE", "NASDAQ"]
+      market_cap_min: 2000000000             # $2B minimum market cap
+      average_volume_min: 5000000            # $5M daily volume
+      listing_period_min: 252                # 1 year listing history
+      
+      sector_allocation:
+        technology: 0.30
+        healthcare: 0.20
+        financials: 0.15
+        consumer_discretionary: 0.15
+        industrials: 0.10
+        consumer_staples: 0.10
+        
+    # ETF Universe (for sector/factor arbitrage)
+    etf_universe:
+      sector_etfs: ["XLK", "XLV", "XLF", "XLY", "XLI", "XLP", "XLE", "XLU", "XLRE"]
+      factor_etfs: ["MTUM", "VMOT", "USMV", "QUAL", "SIZE", "VLUE"]
+      broad_market: ["SPY", "QQQ", "IWM", "EFA", "EEM"]
+      
+    # Bond Universe (for fixed income arbitrage)
+    bond_universe:
+      government_bonds: ["TLT", "IEF", "SHY"]  # Long, intermediate, short
+      corporate_bonds: ["LQD", "HYG", "JNK"]   # IG, HY corporate
+      international: ["BWX", "EMB", "PCY"]     # International bonds
+      
+  # Position Sizing & Risk Management
+  position_sizing:
+    # Base Position Sizing
+    base_method: "volatility_parity"
+    
+    single_position_limits:
+      max_position_size: 0.02                # 2% per position
+      max_pair_allocation: 0.04              # 4% per pair (2% each leg)
+      max_sector_exposure: 0.20              # 20% per sector
+      
+    # Volatility Targeting
+    volatility_targeting:
+      target_portfolio_vol: 0.08             # 8% annual volatility
+      individual_position_vol: 0.15          # 15% individual position vol
+      rebalancing_frequency: "weekly"
+      
+    # Dynamic Sizing
+    dynamic_sizing:
+      confidence_scaling: true               # Scale by signal confidence
+      half_life_scaling: true                # Scale by mean reversion speed
+      volatility_scaling: true              # Scale by volatility regime
+      
+  # Risk Management
+  risk_management:
+    # Portfolio Risk Controls
+    portfolio_controls:
+      max_gross_exposure: 1.5               # 150% gross exposure
+      max_net_exposure: 0.3                 # 30% net exposure (market neutral)
+      beta_limit: 0.2                       # Maximum 0.2 market beta
+      
+    # Correlation Risk
+    correlation_management:
+      max_pair_correlation: 0.4             # Max 40% correlation between pairs
+      correlation_lookback: 60              # 60 days correlation window
+      correlation_monitoring: "daily"
+      
+    # Sector/Factor Neutrality
+    neutrality_constraints:
+      sector_neutral: true                   # Sector neutral portfolio
+      factor_neutral: false                 # Allow some factor exposure
+      currency_neutral: true                # Currency neutral for international
+      
+    # Stop Loss & Profit Taking
+    exit_rules:
+      pair_stop_loss: 0.03                  # 3% stop loss per pair
+      portfolio_stop_loss: 0.02             # 2% daily portfolio stop
+      profit_taking: 0.02                   # Take profits at 2% per pair
+      
+    # Drawdown Management
+    drawdown_controls:
+      max_drawdown_limit: 0.05              # 5% maximum drawdown
+      scale_down_threshold: 0.03            # Scale down at 3% drawdown
+      halt_trading_threshold: 0.04          # Stop trading at 4% drawdown
+      
+  # Execution Strategy
+  execution:
+    # Order Management
+    order_management:
+      simultaneous_execution: true          # Execute pair legs simultaneously
+      order_type: "limit"                   # Use limit orders
+      price_improvement: true               # Seek price improvement
+      
+    # Timing
+    execution_timing:
+      spread_entry_patience: 300            # Wait 5 minutes for fills
+      market_on_close: false                # Avoid MOC orders
+      avoid_earnings: true                  # No trades around earnings
+      
+    # Transaction Cost Management
+    cost_management:
+      max_spread_cost: 0.001                # Max 10 bps spread cost
+      commission_budget: 0.0005             # 5 bps commission budget
+      market_impact_limit: 0.0003          # 3 bps market impact limit
+      
+  # Market Regimes
+  regime_awareness:
+    # Volatility Regimes
+    volatility_regimes:
+      low_vol_threshold: 0.12               # < 12% VIX
+      high_vol_threshold: 0.25              # > 25% VIX
+      
+      regime_adjustments:
+        low_vol:
+          position_multiplier: 1.2          # Increase positions in low vol
+          entry_threshold_multiplier: 0.8   # Lower entry thresholds
+        high_vol:
+          position_multiplier: 0.7          # Reduce positions in high vol
+          entry_threshold_multiplier: 1.3   # Higher entry thresholds
+          
+    # Correlation Regimes
+    correlation_regimes:
+      low_correlation_threshold: 0.3        # < 30% average correlation
+      high_correlation_threshold: 0.7       # > 70% average correlation
+      
+      regime_adjustments:
+        high_correlation:
+          reduce_pairs_trading: true        # Reduce pairs in high correlation
+          increase_factor_neutral: true     # Focus on factor neutral strategies
+          
+    # Market Stress Detection
+    stress_detection:
+      vix_spike_threshold: 1.5              # 1.5x normal VIX
+      correlation_spike_threshold: 0.8      # 80% correlation spike
+      liquidity_stress_threshold: 2.0       # 2x normal bid-ask spreads
+      
+  # Performance Targets
+  performance:
+    target_metrics:
+      annual_return: 0.08                   # 8% annual return target
+      sharpe_ratio: 1.5                     # 1.5 Sharpe ratio target
+      max_drawdown: 0.05                    # 5% maximum drawdown
+      win_rate: 0.60                        # 60% win rate
+      
+    benchmark: "Risk-Free Rate + 5%"
+    
+    risk_adjusted_metrics:
+      calmar_ratio: 1.6                     # Return/Max Drawdown
+      sortino_ratio: 2.0                    # Downside deviation adjusted
+      
+  # Research & Enhancement
+  research_pipeline:
+    # Signal Enhancement
+    signal_research:
+      machine_learning_features: true       # ML-based feature engineering
+      alternative_data: true                # Alternative data sources
+      high_frequency_signals: true          # Intraday mean reversion
+      
+    # Model Improvements
+    model_enhancements:
+      regime_switching_models: true         # Regime-switching parameters
+      non_linear_cointegration: true        # Non-linear cointegration
+      jump_diffusion_models: false          # Future enhancement
+      
+    # Risk Model Updates
+    risk_model_research:
+      dynamic_correlation_models: true      # Time-varying correlations
+      tail_risk_modeling: true              # Extreme event modeling
+      liquidity_risk_modeling: true         # Liquidity-adjusted risk
+      
+  # Monitoring & Alerts
+  monitoring:
+    # Real-time Monitoring
+    real_time_alerts:
+      pair_breakdown: true                  # When pairs stop working
+      cointegration_failure: true          # Cointegration relationship breaks
+      excessive_drawdown: true             # Drawdown exceeds limits
+      
+    # Performance Monitoring
+    performance_monitoring:
+      daily_pnl_attribution: true          # Daily P&L breakdown
+      pair_contribution_analysis: true     # Individual pair performance
+      factor_exposure_tracking: true       # Factor exposure drift
+      
+    # Risk Monitoring
+    risk_monitoring:
+      correlation_drift: true              # Correlation changes
+      volatility_regime_changes: true      # Volatility regime shifts
+      concentration_risk: true             # Position concentration
+      
+  # Backtesting Configuration
+  backtesting:
+    # Historical Testing
+    backtest_period:
+      start_date: "2008-01-01"             # Include financial crisis
+      end_date: "2023-12-31"
+      
+    # Transaction Costs
+    transaction_costs:
+      commission: 0.0005                   # 5 bps commission
+      bid_ask_spread: 0.0003               # 3 bps spread
+      market_impact: 0.0002                # 2 bps market impact
+      
+    # Testing Framework
+    testing_methodology:
+      walk_forward_analysis: true          # Out-of-sample testing
+      monte_carlo_simulation: true         # Monte Carlo validation
+      stress_testing: true                 # Historical stress scenarios
+      
+  # Implementation Requirements
+  implementation:
+    # Data Requirements
+    data_needs:
+      - "Tick-by-tick price data"
+      - "Order book data (Level 2)"
+      - "Fundamental data for screening"
+      - "Corporate action data"
+      - "Economic indicator data"
+      
+    # Infrastructure Requirements
+    infrastructure:
+      - "Low-latency execution system"
+      - "Real-time risk management"
+      - "Statistical computing platform"
+      - "Data storage and retrieval system"
+      
+    # Team Requirements
+    team:
+      - "1 Portfolio Manager"
+      - "2 Quantitative Researchers"
+      - "1 Risk Manager"
+      - "1 Execution Trader"
+      - "0.5 Data Engineer"

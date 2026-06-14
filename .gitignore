@@ -1,0 +1,51 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+.eggs/
+
+# ===== Environment =====
+.env
+!.env.example
+venv/
+.venv/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Data & Models =====
+data/parquet/*.parquet
+data/hdf5/*.h5
+data/archive/
+models/llm/*.gguf
+models/weights/*.pt
+*.ckpt
+
+# ===== Logs =====
+logs/*.log
+logs/audit/*.jsonl
+
+# ===== Temp =====
+/tmp/
+numba_cache/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Docker =====
+infrastructure/nginx/ssl/

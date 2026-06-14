@@ -1,0 +1,625 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quantum-forge
+  labels:
+    name: quantum-forge
+    environment: production
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quantum-forge-config
+  namespace: quantum-forge
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  TRADING_MODE: "live"
+  REDIS_URL: "redis://quantum-forge-redis:6379/0"
+  DATABASE_URL: "postgresql://quantum_user:$(POSTGRES_PASSWORD)@quantum-forge-timescaledb:5432/quantum_forge"
+
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: quantum-forge-secrets
+  namespace: quantum-forge
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  POSTGRES_PASSWORD: cXVhbnR1bV9zZWN1cmVfcGFzc3dvcmRfMjAyNA==  # quantum_secure_password_2024
+  BINANCE_API_KEY: ""  # Add your base64 encoded API key
+  BINANCE_SECRET_KEY: ""  # Add your base64 encoded secret key
+  ALPHA_VANTAGE_API_KEY: ""  # Add your base64 encoded API key
+
+---
+# Persistent Volume for TimescaleDB
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: timescaledb-pv
+  namespace: quantum-forge
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /mnt/data/timescaledb
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: timescaledb-pvc
+  namespace: quantum-forge
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+
+---
+# TimescaleDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-forge-timescaledb
+  namespace: quantum-forge
+  labels:
+    app: timescaledb
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+        tier: database
+    spec:
+      containers:
+      - name: timescaledb
+        image: timescale/timescaledb:latest-pg15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "quantum_forge"
+        - name: POSTGRES_USER
+          value: "quantum_user"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: quantum-forge-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: "md5"
+        volumeMounts:
+        - name: timescaledb-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - quantum_user
+            - -d
+            - quantum_forge
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - quantum_user
+            - -d
+            - quantum_forge
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: timescaledb-storage
+        persistentVolumeClaim:
+          claimName: timescaledb-pvc
+
+---
+# TimescaleDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-forge-timescaledb
+  namespace: quantum-forge
+  labels:
+    app: timescaledb
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: timescaledb
+  type: ClusterIP
+
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-forge-redis
+  namespace: quantum-forge
+  labels:
+    app: redis
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --maxmemory
+        - "2gb"
+        - --maxmemory-policy
+        - allkeys-lru
+        - --save
+        - "900"
+        - "1"
+        - --save
+        - "300"
+        - "10"
+        - --save
+        - "60"
+        - "10000"
+        - --appendonly
+        - "yes"
+        - --appendfsync
+        - everysec
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+      volumes:
+      - name: redis-storage
+        emptyDir: {}
+
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-forge-redis
+  namespace: quantum-forge
+  labels:
+    app: redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+  type: ClusterIP
+
+---
+# QUANTUM-FORGE Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-forge-app
+  namespace: quantum-forge
+  labels:
+    app: quantum-forge-app
+    tier: application
+spec:
+  replicas: 3  # High availability
+  selector:
+    matchLabels:
+      app: quantum-forge-app
+  template:
+    metadata:
+      labels:
+        app: quantum-forge-app
+        tier: application
+    spec:
+      containers:
+      - name: quantum-forge-app
+        image: quantum-forge:latest  # Replace with your actual image
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8501
+          name: streamlit
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: quantum-forge-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: quantum-forge-config
+              key: LOG_LEVEL
+        - name: TRADING_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: quantum-forge-config
+              key: TRADING_MODE
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: quantum-forge-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: quantum-forge-config
+              key: REDIS_URL
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: quantum-forge-secrets
+              key: POSTGRES_PASSWORD
+        - name: BINANCE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantum-forge-secrets
+              key: BINANCE_API_KEY
+        - name: BINANCE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantum-forge-secrets
+              key: BINANCE_SECRET_KEY
+        - name: ALPHA_VANTAGE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quantum-forge-secrets
+              key: ALPHA_VANTAGE_API_KEY
+        - name: FIRM_CONFIG
+          value: "production"
+        - name: MAX_POSITION_SIZE
+          value: "10000000"  # $10M
+        - name: RISK_TOLERANCE
+          value: "0.01"  # 1%
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: data-storage
+          mountPath: /app/data
+        - name: logs-storage
+          mountPath: /app/logs
+        - name: config-storage
+          mountPath: /app/config
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-pvc
+      - name: logs-storage
+        emptyDir: {}
+      - name: config-storage
+        configMap:
+          name: quantum-forge-config
+
+---
+# Data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  namespace: quantum-forge
+spec:
+  accessModes:
+    - ReadWriteMany  # Multiple pods can read/write
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+
+---
+# QUANTUM-FORGE Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-forge-app-service
+  namespace: quantum-forge
+  labels:
+    app: quantum-forge-app
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  - port: 8501
+    targetPort: 8501
+    name: streamlit
+  selector:
+    app: quantum-forge-app
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: quantum-forge-app-hpa
+  namespace: quantum-forge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: quantum-forge-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: quantum-forge-ingress
+  namespace: quantum-forge
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - api.quantum-forge.ai
+    - dashboard.quantum-forge.ai
+    secretName: quantum-forge-tls
+  rules:
+  - host: api.quantum-forge.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: quantum-forge-app-service
+            port:
+              number: 8000
+  - host: dashboard.quantum-forge.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: quantum-forge-app-service
+            port:
+              number: 8501
+
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quantum-forge-network-policy
+  namespace: quantum-forge
+spec:
+  podSelector:
+    matchLabels:
+      app: quantum-forge-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8501
+  - from:
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: timescaledb
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []  # Allow all outbound for external APIs
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quantum-forge-app-pdb
+  namespace: quantum-forge
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: quantum-forge-app
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: quantum-forge-app-monitor
+  namespace: quantum-forge
+  labels:
+    app: quantum-forge-app
+spec:
+  selector:
+    matchLabels:
+      app: quantum-forge-app
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quantum-forge-dashboard
+  namespace: quantum-forge
+  labels:
+    grafana_dashboard: "1"
+data:
+  quantum-forge-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "QUANTUM-FORGE Production Dashboard",
+        "tags": ["quantum-forge", "trading", "hft"],
+        "timezone": "UTC",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job=\"quantum-forge-app\"}[5m])",
+                "legendFormat": "{{method}} {{endpoint}}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Response Time",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"quantum-forge-app\"}[5m]))",
+                "legendFormat": "95th percentile"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Trading P&L",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "trading_pnl_total{job=\"quantum-forge-app\"}",
+                "legendFormat": "Total P&L"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Order Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.99, rate(order_latency_microseconds_bucket{job=\"quantum-forge-app\"}[5m]))",
+                "legendFormat": "99th percentile (μs)"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }

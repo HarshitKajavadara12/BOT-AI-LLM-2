@@ -1,0 +1,170 @@
+QUANTUM-FORGE Validation Results
+==================================================
+Total: 166  |  Pass: 164  |  Fail: 2
+
+[PASS] Import BinanceAPIClient
+[PASS] Import BinanceWebSocket
+[PASS] Import MultiStreamWebSocket
+[PASS] Import TickDataHandler
+[PASS] Import DataStreamManager
+[PASS] Import RealTimeDataCache
+[PASS] Import OrderBookReconstructor
+[PASS] Import AlternativeDataLoader
+[PASS] Import DataCleaner
+[PASS] Import DataNormalizer
+[PASS] Import DataAligner
+[PASS] Import RedisCache
+[PASS] Import TimescaleDBManager
+[PASS] Import ParquetWriter
+[PASS] Import FeatureStore
+[PASS] Import HistoricalDataManager
+[PASS] Import LSTMModel
+[PASS] Import GRUModel
+[PASS] Import TransformerModel
+[PASS] Import CNNModel
+[PASS] Import MultiHeadAttention
+[PASS] Import SelfAttention
+[FAIL] Import CorrelationGraphNet (GNN) → No module named 'torch_geometric'
+[PASS] Import TemporalConvNet
+[PASS] Import StateSpaceModel
+[PASS] Import PPOAgent
+[PASS] Import SACAgent
+[PASS] Import MBPO (Model-Based RL)
+[PASS] Import MarketEnvironment
+[PASS] Import FeatureLearningEngine
+[PASS] Import RepresentationLearner
+[FAIL] Import ManifoldLearner → No module named 'umap'
+[PASS] Import CausalDiscoveryEnsemble
+[PASS] Import MAML
+[PASS] Import FewShotLearner
+[PASS] Import TransferLearner
+[PASS] Import EnsembleDistiller
+[PASS] Import FinancialGaussianProcess
+[PASS] Import BayesianOptimizer
+[PASS] Import StochasticVariationalInference
+[PASS] Import ConformalPredictor
+[PASS] Import MathematicalEngine
+[PASS] Import FourierAnalyzer
+[PASS] Import StochasticProcesses
+[PASS] Import WaveletAnalysis (Signal Processing)
+[PASS] Import KalmanFilter
+[PASS] Import StochasticControl (Optimal Control)
+[PASS] Import ModelPredictiveControl
+[PASS] Import OptimizationMethods
+[PASS] Import UnitRootTests
+[PASS] Import LinearAlgebraEngine
+[PASS] Import OrderBookAnalyzer (Dynamics)
+[PASS] Import PriceFormationAnalyzer
+[PASS] Import LiquidityAnalyzer
+[PASS] Import ToxicityDetector
+[PASS] Import EVTAnalyzer
+[PASS] Import CopulaAnalyzer
+[PASS] Import DrawdownAnalyzer
+[PASS] Import OptimalStoppingAnalyzer
+[PASS] Import CognitiveDampener
+[PASS] Import SignalGenerator
+[PASS] Import MLEnsembleEngine
+[PASS] Import RegimeDetector
+[PASS] Import FeaturePipeline
+[PASS] Import CrossAssetAlphaEngine
+[PASS] Import AlphaResearchScheduler
+[PASS] Import AlphaStore
+[PASS] Import CausalBridge
+[PASS] Import SVMRegimeClassifier
+[PASS] Import OrderBookAnalyzer (Core)
+[PASS] Import AltDataAlphaEngine
+[PASS] Import AlphaCrowdingDetector
+[PASS] Import SpoofingDetector
+[PASS] Import QueuePositionEstimator
+[PASS] Import ExecutionManager
+[PASS] Import ExecutionMode
+[PASS] Import CapitalAllocator
+[PASS] Import StrategyMultiplexer
+[PASS] Import ShadowTracker
+[PASS] Import MarketImpactTracker
+[PASS] Import GPPredictionBridge
+[PASS] Import LLMOutputParser
+[PASS] Import FinancialLLMFineTuner
+[PASS] Import VariationalInferenceBridge
+[PASS] Import VWAPAlgorithm
+[PASS] Import TWAPAlgorithm
+[PASS] Import ImplementationShortfallAlgorithm
+[PASS] Import ArrivalPriceAlgorithm
+[PASS] Import OrderManagementSystem
+[PASS] Import SmartOrderRouter
+[PASS] Import PositionManager
+[PASS] Import FillManager
+[PASS] Import OptimalExecution (ExecutionEngine)
+[PASS] Import ExecutionCostEstimator
+[PASS] Import LiquidityAnalyzer (Pre-Trade)
+[PASS] Import RiskAnalyzer (Pre-Trade)
+[PASS] Import VenueSelector
+[PASS] Import AdaptiveExecutionEngine
+[PASS] Import MarketImpactModel
+[PASS] Import ImplementationShortfallOptimizer
+[PASS] Import HighFrequencyExecutor
+[PASS] Import LatencyOptimizer
+[PASS] Import UltraLowLatencyRouter
+[PASS] Import BacktestEngine
+[PASS] Import EventDrivenBacktester
+[PASS] Import RegimeAwareBacktester
+[PASS] Import TransactionCostModel
+[PASS] Import WalkForwardAnalyzer
+[PASS] Import PerformanceAnalytics
+[PASS] Import PnLAnalyzer
+[PASS] Import RiskAdjustedMetrics
+[PASS] Import SharpeCalculator
+[PASS] Import DrawdownAnalyzer (Analytics)
+[PASS] Import RiskAttributionEngine
+[PASS] Import MarketRegimeDetector
+[PASS] Import HMMRegimeDetector
+[PASS] Import GARCHVolatilityAnalyzer
+[PASS] Import CorrelationRegimeDetector
+[PASS] Import ChangePointDetector
+[PASS] Import ComprehensiveAlphaDiscovery
+[PASS] Import ComprehensiveAlphaValidator
+[PASS] Import ComprehensiveAlphaCombination
+[PASS] Import ComprehensiveAlphaDecayStudy
+[PASS] Import FactorConstructor
+[PASS] Import FactorSelector
+[PASS] Import FactorCombiner
+[PASS] Import FactorDecayAnalyzer
+[PASS] Import PortfolioRiskManager
+[PASS] Import TradingDataCache (DuckDB)
+[PASS] Import IntegrationBridge
+[PASS] Import VectorStore
+[PASS] Import QuantumForgeLLM
+[PASS] Import get_audit_logger (Hash-chain)
+[PASS] Import StatePersistence
+[PASS] Import StorageCoordinator
+[PASS] Import AnalyticsEngine
+[PASS] Import ReplayEngine
+[PASS] Import DynamicPortfolioTracker
+[PASS] Import AlertSystem
+[PASS] Import HealthMonitor
+[PASS] Import MetricsServer
+[PASS] Import ConfigurationManager
+[PASS] Import SystemMonitor
+[PASS] Import BackupManager
+[PASS] Import BenchmarkSuite
+[PASS] Import SystemDeployer
+[PASS] Import IStrategy
+[PASS] Import StrategySignal
+[PASS] Import core.strategies.momentum_strategy
+[PASS] Import core.strategies.quantum_signal_strategy
+[PASS] Import QuantumCoreOrchestrator
+[PASS] Import QuantumForgePipeline
+[PASS] Import QuantumForgeFullSystem
+[PASS] QuantumCoreOrchestrator wires all 24 core modules
+[PASS] ShadowTracker wired via StrategyMultiplexer
+[PASS] QuantumForgePipeline has build methods
+[PASS] Signal fusion uses 50/30/20 weights
+[PASS] RiskGate has regime/drawdown/exposure checks
+[PASS] CircuitBreaker class exists
+[PASS] Audit logger uses hash chaining
+[PASS] ExecutionManager selects VWAP/TWAP
+[PASS] State persistence (save/restore) wired
+[PASS] WebSocket + REST fallback pattern present
+[PASS] Graceful shutdown handler present
+[PASS] 10-step pipeline in QuantumCoreOrchestrator
+[PASS] Import training_pipeline

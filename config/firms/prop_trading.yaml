@@ -1,0 +1,279 @@
+# Proprietary Trading Firm Configuration
+# High-frequency and algorithmic trading focused
+
+firm:
+  name: "Quantum Velocity Trading"
+  id: "prop_trading"
+  type: "proprietary_trading"
+  aum: 500000000  # $500M
+  founded: "2020"
+  
+  # Business Model
+  business_model:
+    prop_capital: true
+    client_capital: false
+    market_making: true
+    systematic_trading: true
+    
+  # Capital Structure
+  capital:
+    total_capital: 500000000      # $500M
+    trading_capital: 400000000    # $400M for trading
+    risk_capital: 350000000       # $350M at risk
+    cash_buffer: 100000000        # $100M cash buffer
+    
+    leverage_limits:
+      intraday_leverage: 10.0     # 10:1 intraday
+      overnight_leverage: 3.0     # 3:1 overnight
+      
+  # Trading Focus
+  trading:
+    primary_focus: "high_frequency"
+    
+    enabled_strategies:
+      - "market_making_equities"
+      - "statistical_arbitrage"
+      - "momentum_microstructure"
+      - "latency_arbitrage"
+      - "cross_venue_arbitrage"
+      - "volatility_trading"
+      
+    trading_style:
+      holding_period: "seconds_to_minutes"
+      trade_frequency: "very_high"
+      position_sizes: "medium"
+      
+    execution_requirements:
+      target_latency_us: 50       # 50 microsecond target
+      max_latency_us: 200         # 200 microsecond max
+      co_location: true
+      direct_feeds: true
+      
+  # Market Making Operations
+  market_making:
+    enabled: true
+    
+    instruments:
+      equities:
+        - symbol: "SPY"
+          min_spread_bps: 0.5
+          max_inventory: 50000
+        - symbol: "QQQ"
+          min_spread_bps: 0.5
+          max_inventory: 30000
+        - symbol: "IWM"
+          min_spread_bps: 1.0
+          max_inventory: 20000
+        - symbol: "AAPL"
+          min_spread_bps: 0.5
+          max_inventory: 10000
+        - symbol: "MSFT"
+          min_spread_bps: 0.5
+          max_inventory: 10000
+          
+    parameters:
+      max_inventory_value: 50000000    # $50M total inventory
+      skew_parameters:
+        inventory_skew: true
+        volatility_skew: true
+        momentum_skew: true
+        
+      risk_controls:
+        max_adverse_selection: 0.001   # 10 bps
+        inventory_timeout: 300         # 5 minutes
+        
+  # High-Frequency Trading Infrastructure
+  hft_infrastructure:
+    # Latency Requirements
+    latency:
+      order_to_market_us: 50          # 50 microseconds
+      market_data_processing_us: 10   # 10 microseconds
+      risk_check_us: 5               # 5 microseconds
+      
+    # Co-location
+    co_location:
+      venues:
+        - "NYSE Mahwah"
+        - "NASDAQ Carteret"
+        - "CME Aurora"
+        - "BATS Secaucus"
+      cross_connects: true
+      
+    # Technology Stack
+    technology:
+      hardware:
+        cpu: "Intel Xeon Gold 6354"
+        memory: "512GB DDR4"
+        network: "25GbE"
+        storage: "NVMe SSD"
+        
+      software:
+        os: "Linux RHEL 8"
+        kernel_bypass: true
+        dpdk: true
+        custom_drivers: true
+        
+  # Risk Management for Prop Trading
+  risk_management:
+    # Intraday Risk Controls
+    intraday_limits:
+      max_gross_exposure: 2000000000  # $2B gross exposure
+      max_net_exposure: 200000000     # $200M net exposure
+      max_sector_exposure: 500000000   # $500M per sector
+      
+      per_strategy_limits:
+        market_making_equities: 1000000000     # $1B
+        statistical_arbitrage: 500000000       # $500M
+        momentum_microstructure: 300000000     # $300M
+        latency_arbitrage: 200000000           # $200M
+        
+    # Real-time Risk Monitoring
+    real_time_risk:
+      position_limits:
+        max_single_position: 10000000    # $10M per position
+        max_symbol_exposure: 50000000    # $50M per symbol
+        concentration_limit: 0.10        # 10% of capital
+        
+      pnl_limits:
+        daily_stop_loss: 5000000         # $5M daily loss limit
+        strategy_stop_loss: 2000000      # $2M per strategy
+        symbol_stop_loss: 1000000        # $1M per symbol
+        
+      volatility_controls:
+        max_portfolio_vol: 0.15          # 15% annualized
+        vol_scaling: true
+        dynamic_sizing: true
+        
+    # Operational Risk
+    operational_risk:
+      order_rate_limits:
+        max_orders_per_second: 10000
+        max_orders_per_symbol: 1000
+        
+      fat_finger_protection:
+        max_order_size: 1000000          # $1M per order
+        price_deviation_check: 0.05      # 5% from mid
+        
+      system_safeguards:
+        kill_switch: true
+        position_reconciliation: "real_time"
+        backup_systems: true
+        
+  # Performance Metrics
+  performance:
+    targets:
+      annual_return: 0.25              # 25% target
+      sharpe_ratio: 2.0                # 2.0+ Sharpe
+      max_drawdown: 0.05               # 5% max drawdown
+      
+    market_making_metrics:
+      target_capture_ratio: 0.60       # 60% spread capture
+      inventory_turnover: 50           # 50x daily turnover
+      adverse_selection_ratio: 0.001   # 10 bps adverse selection
+      
+  # Trading Strategies Configuration
+  strategies:
+    market_making_equities:
+      allocation: 0.50                 # 50% of capital
+      parameters:
+        spread_multiplier: 1.2
+        inventory_penalty: 0.001
+        adverse_selection_alpha: 0.5
+        
+    statistical_arbitrage:
+      allocation: 0.25                 # 25% of capital
+      parameters:
+        lookback_period: 20
+        entry_threshold: 2.0           # 2 standard deviations
+        exit_threshold: 0.5            # 0.5 standard deviations
+        
+    momentum_microstructure:
+      allocation: 0.15                 # 15% of capital
+      parameters:
+        signal_decay: 0.95
+        momentum_window: 10            # 10 ticks
+        min_momentum: 0.001
+        
+    latency_arbitrage:
+      allocation: 0.10                 # 10% of capital
+      parameters:
+        speed_advantage_us: 20         # 20 microsecond advantage
+        min_profit_bps: 0.1            # 1 bp minimum profit
+        
+  # Technology Requirements
+  technology:
+    # Market Data
+    market_data:
+      providers: ["Direct Exchange Feeds", "SIP"]
+      normalization: true
+      tick_by_tick: true
+      order_book_depth: 10
+      
+    # Execution Management
+    execution:
+      oms: "Custom C++"
+      fix_engine: "QuickFIX"  
+      order_types: ["Market", "Limit", "Stop", "Hidden", "Iceberg"]
+      
+    # Risk System
+    risk_system:
+      real_time_monitoring: true
+      pre_trade_checks: true
+      post_trade_monitoring: true
+      position_keeping: "real_time"
+      
+    # Infrastructure
+    infrastructure:
+      servers: 20
+      cores_per_server: 64
+      memory_per_server: "512GB"
+      network_latency: "sub_100us"
+      
+  # Regulatory Compliance
+  compliance:
+    registrations:
+      finra_member: true
+      sec_registered: false    # Prop trading doesn't require SEC registration
+      
+    reporting:
+      large_trader_id: true
+      blue_sheet_reporting: true
+      cat_reporting: true
+      
+    surveillance:
+      trade_surveillance: true
+      market_manipulation_detection: true
+      wash_trading_detection: true
+      
+  # Team Structure
+  team:
+    traders: 8
+    quantitative_developers: 15
+    infrastructure_engineers: 10
+    risk_managers: 3
+    operations: 5
+    compliance: 2
+    
+  # Funding and Costs
+  economics:
+    funding_cost: 0.03              # 3% cost of capital
+    
+    transaction_costs:
+      maker_rebate: -0.0002         # -2 bps rebate
+      taker_fee: 0.0003             # 3 bps fee
+      
+    operational_costs:
+      co_location: 50000            # $50K per month
+      market_data: 100000           # $100K per month
+      technology: 200000            # $200K per month
+      
+  # Business Continuity
+  disaster_recovery:
+    backup_trading_floor: "Chicago"
+    failover_time: "30_seconds"
+    data_replication: "synchronous"
+    
+    procedures:
+      system_failure: "automatic_failover"
+      connectivity_loss: "switch_to_backup"
+      market_disruption: "risk_reduction_mode"

@@ -1,0 +1,67 @@
+name: Quantum-Forge CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install core dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install only the deps needed for tests (skip heavy ML/GPU packages)
+          pip install numpy pandas scipy scikit-learn requests websocket-client \
+                      pyyaml python-dotenv psutil pytest pytest-cov \
+                      fastapi uvicorn pydantic prometheus-client \
+                      pyarrow aiohttp
+
+      - name: Install torch (CPU only)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/test_models.py tests/test_execution.py tests/test_math_engine.py tests/test_new_components.py -v --tb=short
+
+      - name: Run pipeline integration tests
+        run: |
+          python -m pytest tests/test_pipeline_integration.py -v --tb=short
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linters
+        run: pip install flake8
+
+      - name: Lint core modules
+        run: |
+          flake8 core/ --max-line-length=120 --ignore=E501,W503,E402,F401 --count --statistics

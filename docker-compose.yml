@@ -1,0 +1,365 @@
+version: '3.8'
+
+services:
+  # TimescaleDB - Time-series database for historical data
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: quantum-forge-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: quantum_forge
+      POSTGRES_USER: quantum_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quantum_secure_password_2024}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./infrastructure/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: 
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_preload_libraries=timescaledb
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - default_statistics_target=100
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantum_user -d quantum_forge"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - quantum-forge-network
+
+  # Redis - In-memory cache for hot data
+  redis:
+    image: redis:7-alpine
+    container_name: quantum-forge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      redis-server
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+      --tcp-keepalive 300
+      --timeout 0
+      --tcp-backlog 511
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - quantum-forge-network
+
+  # QUANTUM-FORGE Core Application
+  quantum-forge-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quantum-forge-app
+    restart: unless-stopped
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://quantum_user:${POSTGRES_PASSWORD:-quantum_secure_password_2024}@timescaledb:5432/quantum_forge
+      REDIS_URL: redis://redis:6379/0
+      
+      # Application Configuration
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      FIRM_CONFIG: ${FIRM_CONFIG:-demo}
+      
+      # Trading Configuration
+      TRADING_MODE: ${TRADING_MODE:-simulation}
+      MAX_POSITION_SIZE: ${MAX_POSITION_SIZE:-1000000}
+      RISK_TOLERANCE: ${RISK_TOLERANCE:-0.02}
+      
+      # API Keys (use .env file)
+      BINANCE_API_KEY: ${BINANCE_API_KEY}
+      BINANCE_SECRET_KEY: ${BINANCE_SECRET_KEY}
+      ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY}
+      
+      # Performance Settings
+      NUMBA_CACHE_DIR: /tmp/numba_cache
+      PYTHONUNBUFFERED: 1
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    ports:
+      - "8000:8000"  # FastAPI
+      - "8501:8501"  # Streamlit Dashboard
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+      - numba_cache:/tmp/numba_cache
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - quantum-forge-network
+
+  # Streamlit Dashboard (separate service for scaling)
+  quantum-forge-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: quantum-forge-dashboard
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://quantum_user:${POSTGRES_PASSWORD:-quantum_secure_password_2024}@timescaledb:5432/quantum_forge
+      REDIS_URL: redis://redis:6379/0
+      APP_URL: http://quantum-forge-app:8000
+    ports:
+      - "8502:8501"
+    volumes:
+      - ./interface:/app/interface
+      - ./data:/app/data
+    depends_on:
+      - quantum-forge-app
+    networks:
+      - quantum-forge-network
+
+  # Nginx - Reverse proxy and load balancer
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: quantum-forge-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - quantum-forge-app
+      - quantum-forge-dashboard
+    networks:
+      - quantum-forge-network
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: quantum-forge-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+    networks:
+      - quantum-forge-network
+
+  # Grafana - Visualization and dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: quantum-forge-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-quantum_admin_2024}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - quantum-forge-network
+
+  # Jaeger - Distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: quantum-forge-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector
+    networks:
+      - quantum-forge-network
+
+  # Redis Insight - Redis GUI (development only)
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: quantum-forge-redis-insight
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - redis_insight_data:/db
+    profiles:
+      - dev
+    networks:
+      - quantum-forge-network
+
+  # PgAdmin - PostgreSQL GUI (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: quantum-forge-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@quantum-forge.ai
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-quantum_admin_2024}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    profiles:
+      - dev
+    depends_on:
+      - timescaledb
+    networks:
+      - quantum-forge-network
+
+  # Jupyter Lab - Research environment (development only)
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
+    container_name: quantum-forge-jupyter
+    restart: unless-stopped
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:-quantum_research_2024}
+      DATABASE_URL: postgresql://quantum_user:${POSTGRES_PASSWORD:-quantum_secure_password_2024}@timescaledb:5432/quantum_forge
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/notebooks
+      - ./research:/home/jovyan/research
+      - ./data:/home/jovyan/data
+      - jupyter_data:/home/jovyan/.jupyter
+    profiles:
+      - dev
+    depends_on:
+      - timescaledb
+      - redis
+    networks:
+      - quantum-forge-network
+
+  # Qdrant - Vector database for LLM/RAG embeddings
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: quantum-forge-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - quantum-forge-network
+
+# Networks
+networks:
+  quantum-forge-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  timescaledb_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  redis_insight_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  jupyter_data:
+    driver: local
+  numba_cache:
+    driver: local
+  qdrant_data:
+    driver: local
+
+# Health check and dependency management
+x-healthcheck: &default-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s

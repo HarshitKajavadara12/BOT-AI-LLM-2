@@ -1,0 +1,629 @@
+---
+# Prometheus Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: quantum-forge
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'quantum-forge-prod'
+        
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+      
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+              
+    scrape_configs:
+      # Prometheus self-monitoring
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+          
+      # QUANTUM-FORGE Application
+      - job_name: 'quantum-forge-app'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - quantum-forge
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: quantum-forge-app
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+            
+      # TimescaleDB Metrics
+      - job_name: 'timescaledb'
+        static_configs:
+          - targets: ['quantum-forge-timescaledb:5432']
+        metrics_path: /metrics
+        
+      # Redis Metrics
+      - job_name: 'redis'
+        static_configs:
+          - targets: ['quantum-forge-redis:6379']
+        metrics_path: /metrics
+        
+      # Node Exporter (if deployed)
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: node-exporter
+            
+      # cAdvisor for container metrics
+      - job_name: 'cadvisor'
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+  # Alert Rules
+  alert_rules.yml: |
+    groups:
+      - name: quantum-forge.rules
+        rules:
+          # High-level system alerts
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate detected"
+              description: "Error rate is {{ $value }} errors per second"
+              
+          - alert: HighLatency
+            expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency detected"
+              description: "99th percentile latency is {{ $value }}s"
+              
+          # Trading-specific alerts
+          - alert: TradingSystemDown
+            expr: up{job="quantum-forge-app"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Trading system is down"
+              description: "QUANTUM-FORGE application is not responding"
+              
+          - alert: HighDrawdown
+            expr: trading_drawdown_percent > 5
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High drawdown detected"
+              description: "Current drawdown is {{ $value }}%"
+              
+          - alert: OrderLatencyHigh
+            expr: histogram_quantile(0.99, rate(order_latency_microseconds_bucket[1m])) > 1000
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "Order latency is high"
+              description: "99th percentile order latency is {{ $value }}μs"
+              
+          - alert: VolumeAnomalyDetected
+            expr: abs(trading_volume_zscore) > 3
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Trading volume anomaly"
+              description: "Volume Z-score is {{ $value }}"
+              
+          # Infrastructure alerts
+          - alert: DatabaseConnectionHigh
+            expr: pg_stat_activity_count > 80
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High database connections"
+              description: "Database has {{ $value }} active connections"
+              
+          - alert: RedisMemoryHigh
+            expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Redis memory usage high"
+              description: "Redis memory usage is {{ $value | humanizePercentage }}"
+              
+          - alert: DiskSpaceLow
+            expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Low disk space"
+              description: "Disk space is {{ $value | humanizePercentage }} full"
+
+---
+# Alertmanager Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: quantum-forge
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@quantum-forge.ai'
+      smtp_auth_username: 'alerts@quantum-forge.ai'
+      smtp_auth_password: '${SMTP_PASSWORD}'
+      
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'quantum-forge-alerts'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 5s
+          repeat_interval: 30m
+        - match:
+            alertname: TradingSystemDown
+          receiver: 'emergency-alerts'
+          group_wait: 0s
+          repeat_interval: 5m
+          
+    receivers:
+      - name: 'quantum-forge-alerts'
+        email_configs:
+          - to: 'team@quantum-forge.ai'
+            subject: '[QUANTUM-FORGE] {{ .GroupLabels.alertname }}'
+            body: |
+              {{ range .Alerts }}
+              Alert: {{ .Annotations.summary }}
+              Description: {{ .Annotations.description }}
+              Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+              {{ end }}
+        slack_configs:
+          - api_url: '${SLACK_WEBHOOK_URL}'
+            channel: '#trading-alerts'
+            title: 'QUANTUM-FORGE Alert'
+            text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+            
+      - name: 'critical-alerts'
+        email_configs:
+          - to: 'critical@quantum-forge.ai'
+            subject: '[CRITICAL] QUANTUM-FORGE Alert'
+            body: |
+              CRITICAL ALERT TRIGGERED
+              {{ range .Alerts }}
+              Alert: {{ .Annotations.summary }}
+              Description: {{ .Annotations.description }}
+              Time: {{ .StartsAt }}
+              {{ end }}
+        pagerduty_configs:
+          - service_key: '${PAGERDUTY_SERVICE_KEY}'
+            description: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+            
+      - name: 'emergency-alerts'
+        email_configs:
+          - to: 'emergency@quantum-forge.ai'
+            subject: '[EMERGENCY] Trading System Down'
+            body: |
+              EMERGENCY: QUANTUM-FORGE TRADING SYSTEM IS DOWN
+              Immediate action required!
+              Time: {{ .CommonAnnotations.timestamp }}
+        webhook_configs:
+          - url: 'https://api.quantum-forge.ai/emergency-webhook'
+            send_resolved: true
+
+---
+# Grafana Provisioning - Datasources
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: quantum-forge
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+        
+      - name: TimescaleDB
+        type: postgres
+        access: proxy
+        url: quantum-forge-timescaledb:5432
+        database: quantum_forge
+        user: quantum_user
+        secureJsonData:
+          password: ${POSTGRES_PASSWORD}
+        jsonData:
+          sslmode: disable
+          postgresVersion: 1300
+          timescaledb: true
+          
+      - name: Redis
+        type: redis-datasource
+        access: proxy
+        url: redis://quantum-forge-redis:6379
+        jsonData:
+          database: 0
+
+---
+# Grafana Provisioning - Dashboards
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: quantum-forge
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'quantum-forge'
+        orgId: 1
+        folder: 'QUANTUM-FORGE'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+# Prometheus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: quantum-forge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--storage.tsdb.retention.time=30d'
+          - '--web.enable-lifecycle'
+          - '--web.enable-admin-api'
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-rules
+          mountPath: /etc/prometheus/rules
+        - name: prometheus-storage
+          mountPath: /prometheus
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+          items:
+          - key: prometheus.yml
+            path: prometheus.yml
+      - name: prometheus-rules
+        configMap:
+          name: prometheus-config
+          items:
+          - key: alert_rules.yml
+            path: alert_rules.yml
+      - name: prometheus-storage
+        emptyDir: {}
+
+---
+# Prometheus Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: quantum-forge
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: prometheus
+
+---
+# Alertmanager Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: quantum-forge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:latest
+        ports:
+        - containerPort: 9093
+        args:
+          - '--config.file=/etc/alertmanager/alertmanager.yml'
+          - '--storage.path=/alertmanager'
+          - '--web.external-url=http://alertmanager:9093'
+        volumeMounts:
+        - name: alertmanager-config
+          mountPath: /etc/alertmanager
+        - name: alertmanager-storage
+          mountPath: /alertmanager
+        env:
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: monitoring-secrets
+              key: smtp-password
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: monitoring-secrets
+              key: slack-webhook-url
+        - name: PAGERDUTY_SERVICE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: monitoring-secrets
+              key: pagerduty-service-key
+      volumes:
+      - name: alertmanager-config
+        configMap:
+          name: alertmanager-config
+      - name: alertmanager-storage
+        emptyDir: {}
+
+---
+# Alertmanager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: quantum-forge
+spec:
+  ports:
+  - port: 9093
+    targetPort: 9093
+  selector:
+    app: alertmanager
+
+---
+# Grafana Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: quantum-forge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: monitoring-secrets
+              key: grafana-admin-password
+        - name: GF_INSTALL_PLUGINS
+          value: "redis-datasource,postgres,grafana-piechart-panel"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: grafana-dashboards-config
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: grafana-storage
+        emptyDir: {}
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+      - name: grafana-dashboards-config
+        configMap:
+          name: grafana-dashboards-config
+      - name: grafana-dashboards
+        configMap:
+          name: quantum-forge-dashboard
+
+---
+# Grafana Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: quantum-forge
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: grafana
+
+---
+# Monitoring Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: monitoring-secrets
+  namespace: quantum-forge
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  smtp-password: ""  # Add your SMTP password
+  slack-webhook-url: ""  # Add your Slack webhook URL
+  pagerduty-service-key: ""  # Add your PagerDuty service key
+  grafana-admin-password: YWRtaW5wYXNzd29yZA==  # adminpassword
+
+---
+# Jaeger Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: quantum-forge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        ports:
+        - containerPort: 16686  # UI
+        - containerPort: 14268  # HTTP collector
+        - containerPort: 14250  # gRPC collector
+        - containerPort: 6831   # UDP Thrift
+        - containerPort: 6832   # UDP Thrift
+        env:
+        - name: COLLECTOR_ZIPKIN_HTTP_PORT
+          value: "9411"
+        - name: SPAN_STORAGE_TYPE
+          value: "badger"
+        - name: BADGER_EPHEMERAL
+          value: "false"
+        - name: BADGER_DIRECTORY_VALUE
+          value: "/badger/data"
+        - name: BADGER_DIRECTORY_KEY
+          value: "/badger/key"
+        volumeMounts:
+        - name: jaeger-storage
+          mountPath: /badger
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: jaeger-storage
+        emptyDir: {}
+
+---
+# Jaeger Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: quantum-forge
+spec:
+  ports:
+  - name: ui
+    port: 16686
+    targetPort: 16686
+  - name: http-collector
+    port: 14268
+    targetPort: 14268
+  - name: grpc-collector
+    port: 14250
+    targetPort: 14250
+  - name: udp-thrift-6831
+    port: 6831
+    targetPort: 6831
+    protocol: UDP
+  - name: udp-thrift-6832
+    port: 6832
+    targetPort: 6832
+    protocol: UDP
+  selector:
+    app: jaeger

@@ -1,0 +1,435 @@
+# QUANTUM-FORGE Binance Configuration
+# Cryptocurrency Trading Configuration for Binance Exchange
+
+binance:
+  # API Configuration
+  api:
+    base_url: "https://api.binance.com"
+    testnet_url: "https://testnet.binance.vision"
+    use_testnet: false
+    
+    # API Keys (set via environment variables)
+    # BINANCE_API_KEY
+    # BINANCE_SECRET_KEY
+    
+    # Rate Limits (per minute)
+    rate_limits:
+      orders: 1200
+      requests: 6000
+      websocket_connections: 300
+    
+    # Timeout settings (milliseconds)
+    timeouts:
+      connect: 5000
+      read: 10000
+      order_execution: 3000
+  
+  # WebSocket Configuration
+  websocket:
+    enabled: true
+    streams:
+      - aggTrade    # Aggregate trades
+      - depth       # Order book
+      - kline_1m    # 1-minute candles
+      - ticker      # 24hr ticker
+    
+    reconnect:
+      enabled: true
+      max_attempts: 10
+      backoff_base: 2
+      max_delay: 60
+  
+  # Trading Pairs Configuration
+  trading_pairs:
+    # Major pairs (7 supported pairs)
+    active_pairs:
+      - symbol: "BTCUSDT"
+        name: "Bitcoin"
+        base: "BTC"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.00001
+        tick_size: 0.01
+        max_position: 100000  # USDT
+        
+      - symbol: "ETHUSDT"
+        name: "Ethereum"
+        base: "ETH"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.0001
+        tick_size: 0.01
+        max_position: 80000
+        
+      - symbol: "BNBUSDT"
+        name: "Binance Coin"
+        base: "BNB"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.001
+        tick_size: 0.01
+        max_position: 60000
+        
+      - symbol: "SOLUSDT"
+        name: "Solana"
+        base: "SOL"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.01
+        tick_size: 0.01
+        max_position: 50000
+        
+      - symbol: "ADAUSDT"
+        name: "Cardano"
+        base: "ADA"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.1
+        tick_size: 0.0001
+        max_position: 40000
+        
+      - symbol: "DOGEUSDT"
+        name: "Dogecoin"
+        base: "DOGE"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 1.0
+        tick_size: 0.00001
+        max_position: 30000
+        
+      - symbol: "XRPUSDT"
+        name: "Ripple"
+        base: "XRP"
+        quote: "USDT"
+        min_notional: 10.0
+        step_size: 0.1
+        tick_size: 0.0001
+        max_position: 35000
+    
+    # Pair-specific volatility estimates (daily)
+    expected_volatility:
+      BTCUSDT: 0.04   # 4% daily
+      ETHUSDT: 0.05   # 5% daily
+      BNBUSDT: 0.045  # 4.5% daily
+      SOLUSDT: 0.06   # 6% daily
+      ADAUSDT: 0.055  # 5.5% daily
+      DOGEUSDT: 0.08  # 8% daily
+      XRPUSDT: 0.05   # 5% daily
+
+# Trading Configuration
+trading:
+  # Order Types
+  order_types:
+    - LIMIT
+    - MARKET
+    - STOP_LOSS_LIMIT
+    - TAKE_PROFIT_LIMIT
+  
+  # Execution Settings
+  execution:
+    default_order_type: "LIMIT"
+    time_in_force: "GTC"  # Good Till Cancel
+    
+    # Slippage tolerance (%)
+    max_slippage: 0.2
+    
+    # Order retry settings
+    max_retries: 3
+    retry_delay: 500  # milliseconds
+  
+  # Position Management
+  positions:
+    max_open_positions: 7  # One per pair
+    max_leverage: 3.0      # Conservative for crypto
+    min_position_size: 10  # USDT
+    
+    # Portfolio limits (USDT)
+    total_exposure_limit: 500000
+    per_pair_limit: 100000
+  
+  # Fee Structure
+  fees:
+    maker_fee: 0.001   # 0.10%
+    taker_fee: 0.001   # 0.10%
+    
+    # VIP levels (adjust based on your tier)
+    vip_level: 0
+    bnb_discount: false  # Use BNB for fee discount
+
+# Risk Management
+risk:
+  # Value at Risk (VaR)
+  var:
+    confidence_level: 0.95
+    time_horizon_hours: 24
+    calculation_method: "historical"  # historical, parametric, monte_carlo
+    
+  # Position Limits
+  limits:
+    max_portfolio_var: 0.05      # 5% of portfolio
+    max_position_var: 0.03       # 3% per position
+    max_drawdown: 0.15           # 15% max drawdown
+    
+    # Concentration limits
+    max_single_asset: 0.30       # 30% in one asset
+    max_sector_exposure: 0.50    # 50% in similar assets
+  
+  # Stop Loss / Take Profit
+  exit_rules:
+    use_stop_loss: true
+    default_stop_loss: 0.05      # 5% stop loss
+    
+    use_take_profit: true
+    default_take_profit: 0.10    # 10% take profit
+    
+    trailing_stop:
+      enabled: true
+      activation_pct: 0.03       # Activate after 3% profit
+      trail_pct: 0.02            # Trail by 2%
+  
+  # Stress Testing Scenarios
+  stress_scenarios:
+    market_crash:
+      description: "Major crypto market crash"
+      shocks:
+        BTCUSDT: -0.25
+        ETHUSDT: -0.30
+        BNBUSDT: -0.28
+        SOLUSDT: -0.35
+        ADAUSDT: -0.32
+        DOGEUSDT: -0.40
+        XRPUSDT: -0.33
+    
+    regulatory_shock:
+      description: "Major regulatory announcement"
+      shocks:
+        BTCUSDT: -0.20
+        ETHUSDT: -0.18
+        BNBUSDT: -0.25
+        SOLUSDT: -0.15
+        ADAUSDT: -0.16
+        DOGEUSDT: -0.10
+        XRPUSDT: -0.22
+    
+    exchange_hack:
+      description: "Security breach at major exchange"
+      shocks:
+        BTCUSDT: -0.15
+        ETHUSDT: -0.12
+        BNBUSDT: -0.30
+        SOLUSDT: -0.10
+        ADAUSDT: -0.08
+        DOGEUSDT: -0.05
+        XRPUSDT: -0.10
+    
+    flash_crash:
+      description: "Rapid liquidity event"
+      shocks:
+        BTCUSDT: -0.30
+        ETHUSDT: -0.35
+        BNBUSDT: -0.32
+        SOLUSDT: -0.40
+        ADAUSDT: -0.38
+        DOGEUSDT: -0.45
+        XRPUSDT: -0.38
+
+# Data Management
+data:
+  # Historical Data
+  historical:
+    lookback_days: 365
+    intervals:
+      - 1m   # 1 minute
+      - 5m   # 5 minutes
+      - 15m  # 15 minutes
+      - 1h   # 1 hour
+      - 4h   # 4 hours
+      - 1d   # 1 day
+    
+    storage:
+      path: "data/historical"
+      format: "parquet"
+      compression: "snappy"
+  
+  # Real-time Data
+  realtime:
+    buffer_size: 10000
+    flush_interval: 60  # seconds
+    
+    # Market depth
+    order_book_levels: 20
+    update_speed: "100ms"  # 100ms or 1000ms
+  
+  # Data Quality
+  quality_checks:
+    enabled: true
+    
+    checks:
+      - missing_data
+      - outliers
+      - price_jumps
+      - volume_spikes
+    
+    thresholds:
+      max_missing_pct: 0.01
+      price_jump_sigma: 5.0
+      volume_spike_sigma: 4.0
+
+# Strategy Configuration
+strategies:
+  # Alpha Generation
+  alpha:
+    enabled: true
+    
+    # Signal types
+    signals:
+      - momentum
+      - mean_reversion
+      - trend_following
+      - arbitrage
+    
+    # Rebalancing
+    rebalance_frequency: "1h"
+    min_signal_strength: 0.3
+  
+  # Machine Learning
+  ml:
+    enabled: true
+    
+    models:
+      - lstm
+      - transformer
+      - ensemble
+    
+    training:
+      retrain_frequency: "daily"
+      lookback_window: 30  # days
+      validation_split: 0.2
+    
+    features:
+      - price_momentum
+      - volume_profile
+      - order_book_imbalance
+      - social_sentiment
+      - on_chain_metrics
+
+# Monitoring & Alerts
+monitoring:
+  # Logging
+  logging:
+    level: "INFO"
+    console: true
+    file: true
+    file_path: "logs/quantum_forge.log"
+    rotation: "daily"
+    retention_days: 30
+  
+  # Performance Metrics
+  metrics:
+    update_interval: 60  # seconds
+    
+    tracked_metrics:
+      - pnl
+      - sharpe_ratio
+      - max_drawdown
+      - win_rate
+      - trade_count
+      - execution_latency
+  
+  # Alerts
+  alerts:
+    enabled: true
+    
+    channels:
+      - console
+      - file
+      - email  # Configure SMTP separately
+    
+    conditions:
+      - type: "drawdown"
+        threshold: 0.10
+        severity: "critical"
+      
+      - type: "position_size"
+        threshold: 0.80  # 80% of limit
+        severity: "warning"
+      
+      - type: "api_error"
+        threshold: 5  # errors per minute
+        severity: "high"
+      
+      - type: "execution_latency"
+        threshold: 1000  # milliseconds
+        severity: "medium"
+
+# Backtesting Configuration
+backtesting:
+  # Simulation Parameters
+  simulation:
+    initial_capital: 100000  # USDT
+    
+    # Crypto-specific costs
+    transaction_costs:
+      commission: 0.001  # 0.1%
+      slippage_bps: 10   # 10 basis points
+    
+    # 24/7 market
+    trading_hours: "24/7"
+  
+  # Performance Analysis
+  analysis:
+    benchmark: "BTCUSDT"  # Use BTC as benchmark
+    
+    metrics:
+      - total_return
+      - sharpe_ratio
+      - sortino_ratio
+      - max_drawdown
+      - calmar_ratio
+      - win_rate
+      - profit_factor
+    
+    # Regime analysis
+    regime_detection: true
+    regime_metrics:
+      - volatility
+      - trend
+      - correlation
+
+# System Configuration
+system:
+  # Performance
+  performance:
+    max_threads: 8
+    async_io: true
+    
+    # Memory management
+    max_memory_mb: 4096
+    gc_interval: 300  # seconds
+  
+  # Failover & Recovery
+  failover:
+    enabled: true
+    
+    # Automatic recovery
+    auto_recovery: true
+    recovery_timeout: 30  # seconds
+    
+    # Backup connections
+    backup_endpoints:
+      - "https://api1.binance.com"
+      - "https://api2.binance.com"
+      - "https://api3.binance.com"
+  
+  # Maintenance
+  maintenance:
+    # Health checks
+    health_check_interval: 60  # seconds
+    
+    # Auto-shutdown conditions
+    auto_shutdown:
+      enabled: true
+      conditions:
+        - max_consecutive_errors: 10
+        - max_drawdown_pct: 0.20
+        - api_disconnected_minutes: 5
