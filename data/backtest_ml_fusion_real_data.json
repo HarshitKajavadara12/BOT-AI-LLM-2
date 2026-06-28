@@ -1,0 +1,142 @@
+{
+  "timestamp": "2026-06-22T01:18:05.818022",
+  "report_type": "ML Fusion Backtest \u2014 Real Binance Data",
+  "data_source": "Binance Public API (api.binance.com)",
+  "config": {
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "BNBUSDT",
+      "SOLUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "XRPUSDT"
+    ],
+    "days": 90,
+    "interval": "1h",
+    "capital_per_symbol": 100000.0,
+    "fusion_weights": {
+      "math": 0.5,
+      "ml": 0.3,
+      "cross_asset": 0.2
+    },
+    "ml_models": "LSTM, GRU, Transformer, TCN, PPO, SAC, GP, LinearMom, VolPredictor",
+    "math_engines": "Fourier, Wavelet, Stochastic, Momentum, MeanRev, Volatility, Microstructure",
+    "cost_model": "Full (slippage, spread, fees, funding, tax)"
+  },
+  "aggregate": {
+    "total_initial": 700000.0,
+    "total_final": 1085369.12,
+    "net_pnl": 385369.12,
+    "return_pct": 55.0527,
+    "avg_sharpe": 10.398,
+    "avg_sortino": 248.929,
+    "avg_max_dd_pct": 0.3118,
+    "total_trades": 444,
+    "avg_win_rate": 31.3,
+    "total_costs": 6397.67,
+    "avg_buy_hold_return": -18.03,
+    "alpha_vs_bh": 73.0803,
+    "runtime_s": 41.4
+  },
+  "signal_stats": {
+    "total_signals": 14770,
+    "total_ml_predictions": 1232,
+    "avg_math_signal": 0.07536172889836999,
+    "avg_ml_signal": 0.21477435515280865,
+    "avg_cross_signal": 0.2784396696549279
+  },
+  "per_symbol": {
+    "BTCUSDT": {
+      "initial": 100000.0,
+      "final": 160265.95,
+      "return_pct": 60.2659,
+      "sharpe": 10.931,
+      "sortino": 356.891,
+      "max_dd_pct": 0.2254,
+      "trades": 66,
+      "win_rate": 39.4,
+      "profit_factor": 0.527,
+      "total_costs": 818.93,
+      "avg_holding_hrs": 29.8
+    },
+    "ETHUSDT": {
+      "initial": 100000.0,
+      "final": 161303.53,
+      "return_pct": 61.3035,
+      "sharpe": 10.595,
+      "sortino": 280.422,
+      "max_dd_pct": 0.5249,
+      "trades": 66,
+      "win_rate": 36.4,
+      "profit_factor": 0.444,
+      "total_costs": 876.25,
+      "avg_holding_hrs": 29.9
+    },
+    "BNBUSDT": {
+      "initial": 100000.0,
+      "final": 148611.16,
+      "return_pct": 48.6112,
+      "sharpe": 9.907,
+      "sortino": 241.183,
+      "max_dd_pct": 0.2832,
+      "trades": 61,
+      "win_rate": 29.5,
+      "profit_factor": 0.55,
+      "total_costs": 790.88,
+      "avg_holding_hrs": 31.6
+    },
+    "SOLUSDT": {
+      "initial": 100000.0,
+      "final": 148176.16,
+      "return_pct": 48.1762,
+      "sharpe": 9.61,
+      "sortino": 197.336,
+      "max_dd_pct": 0.2507,
+      "trades": 52,
+      "win_rate": 28.8,
+      "profit_factor": 0.443,
+      "total_costs": 764.51,
+      "avg_holding_hrs": 36.1
+    },
+    "ADAUSDT": {
+      "initial": 100000.0,
+      "final": 167963.74,
+      "return_pct": 67.9637,
+      "sharpe": 11.337,
+      "sortino": 226.763,
+      "max_dd_pct": 0.329,
+      "trades": 71,
+      "win_rate": 29.6,
+      "profit_factor": 0.523,
+      "total_costs": 1221.75,
+      "avg_holding_hrs": 27.8
+    },
+    "DOGEUSDT": {
+      "initial": 100000.0,
+      "final": 157807.51,
+      "return_pct": 57.8075,
+      "sharpe": 10.948,
+      "sortino": 217.172,
+      "max_dd_pct": 0.2852,
+      "trades": 77,
+      "win_rate": 26.0,
+      "profit_factor": 0.276,
+      "total_costs": 1249.42,
+      "avg_holding_hrs": 24.3
+    },
+    "XRPUSDT": {
+      "initial": 100000.0,
+      "final": 141241.07,
+      "return_pct": 41.2411,
+      "sharpe": 9.457,
+      "sortino": 222.735,
+      "max_dd_pct": 0.2845,
+      "trades": 51,
+      "win_rate": 29.4,
+      "profit_factor": 0.29,
+      "total_costs": 675.93,
+      "avg_holding_hrs": 38.5
+    }
+  }
+}

@@ -1,0 +1,54 @@
+====================================================================================================
+  QUANTUM-FORGE ù ML FUSION BACKTEST (REAL BINANCE DATA)
+  Signal Fusion: Math 50% + ML 30% + CrossAsset 20%
+  Cost Model: Slippage + Spread + Fees + Funding + Tax
+  Data: Real Binance 1h klines | 180 days | 7 pairs
+====================================================================================================
+
+====================================================================================================
+  STEP 1: DOWNLOADING REAL MARKET DATA FROM BINANCE
+====================================================================================================
+  Fetching BTCUSDT (1h, 90 days)... 2160 bars | $70,915.59 -> $64,205.67 | B&H: -9.5%
+  Fetching ETHUSDT (1h, 90 days)... 2160 bars | $2,161.49 -> $1,734.92 | B&H: -19.7%
+  Fetching BNBUSDT (1h, 90 days)... 2160 bars | $639.23 -> $591.68 | B&H: -7.4%
+  Fetching SOLUSDT (1h, 90 days)... 2160 bars | $91.79 -> $74.34 | B&H: -19.0%
+  Fetching ADAUSDT (1h, 90 days)... 2160 bars | $0.26 -> $0.16 | B&H: -38.3%
+  Fetching DOGEUSDT (1h, 90 days)... 2160 bars | $0.10 -> $0.08 | B&H: -12.0%
+  Fetching XRPUSDT (1h, 90 days)... 2160 bars | $1.44 -> $1.15 | B&H: -20.2%
+
+====================================================================================================
+  STEP 2: RUNNING ML FUSION BACKTEST
+====================================================================================================
+  Symbols:       BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, ADAUSDT, DOGEUSDT, XRPUSDT
+  Capital:       $100,000 per symbol ($700,000 total)
+  Fusion:        Math 50% | ML 30% | CrossAsset 20%
+  Risk Gates:    6-check cascade
+  Cost Model:    Full institutional (slippage+spread+fees+funding+tax)
+Using device: cpu
+  Aligned data: 2160 bars across all 7 symbols
+    Progress: 0% (0/2160 bars)
+    Progress: 10% (216/2160 bars)
+    Progress: 20% (432/2160 bars)
+    Progress: 30% (648/2160 bars)
+    Progress: 40% (864/2160 bars)
+    Progress: 50% (1080/2160 bars)
+    Progress: 60% (1296/2160 bars)
+    Progress: 70% (1512/2160 bars)
+    Progress: 80% (1728/2160 bars)
+    Progress: 90% (1944/2160 bars)
+    Progress: 100% ù Complete
+    Debug: Signals passing all gates: 6716
+    Debug: Gate blocks: {'signal_floor': 5603, 'high_vol': 2066, 'crisis': 385}
+
+
+====================================================================================================
+  RESULTS: ML FUSION BACKTEST (REAL DATA)
+====================================================================================================
+
+  PORTFOLIO SUMMARY:
+Traceback (most recent call last):
+  File "run_backtest_ml_fusion.py", line 712, in <module>
+    print(f"  {'\u2500'*75}")
+  File "C:\SDE\Python\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 2-76: character maps to <undefined>
